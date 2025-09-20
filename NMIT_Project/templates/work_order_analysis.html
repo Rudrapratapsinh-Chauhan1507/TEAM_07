@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manufacturing Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 flex">
+
+    <!-- Sidebar -->
+    <div class="w-64 bg-gray-800 min-h-screen p-6 space-y-6">
+        <h1 class="text-xl font-bold mb-6">Master Menu</h1>
+        <ul class="space-y-3">
+            <li><a href="{% url 'manufacturing_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a></li>
+            <li><a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a></li>
+            <li><a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a></li>
+            <li><a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a></li>
+            <li><a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-6 space-y-8">
+
+        <!-- Toolbar -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+            <a href="{% url 'new_manufacturing_order' %}" class="bg-cyan-500 text-white px-4 py-2 rounded hover:bg-cyan-600">+ New Manufacturing Order</a>
+            <input type="text" placeholder="Search..." class="border rounded-lg px-4 py-2 w-full md:w-1/2 bg-gray-800 text-gray-200 border-gray-600">
+            <div class="flex space-x-3">
+                <button class="p-2 rounded bg-gray-700 hover:bg-gray-600">📋</button>
+                <button class="p-2 rounded bg-gray-700 hover:bg-gray-600">📊</button>
+            </div>
+        </div>
+
+        <!-- Status Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+            {% for status, orders in orders_by_status %}
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <h2 class="text-lg font-semibold mb-2">{{ status }}</h2>
+                    <ul class="text-gray-300">
+                        {% for order in orders %}
+                            <li>{{ order.name }} - {{ order.status }}</li>
+                        {% empty %}
+                            <li>No orders in this status.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Orders Table -->
+        <div class="overflow-x-auto bg-gray-800 p-4 rounded-lg">
+            <table class="min-w-full table-auto">
+                <thead class="bg-gray-700 text-gray-200">
+                    <tr>
+                        <th class="px-4 py-2"><input type="checkbox"></th>
+                        <th class="px-4 py-2">Reference</th>
+                        <th class="px-4 py-2">Schedule Date</th>
+                        <th class="px-4 py-2">Finished Product</th>
+                        <th class="px-4 py-2">Status</th>
+                        <th class="px-4 py-2">Quantity</th>
+                        <th class="px-4 py-2">Unit</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-200">
+                    {% for mo in manufacturing_orders %}
+                        <tr class="border-b border-gray-700">
+                            <td class="px-4 py-2"><input type="checkbox"></td>
+                            <td class="px-4 py-2">{{ mo.reference }}</td>
+                            <td class="px-4 py-2">{{ mo.schedule_date }}</td>
+                            <td class="px-4 py-2">{{ mo.product.name }}</td>
+                            <td class="px-4 py-2">{{ mo.status }}</td>
+                            <td class="px-4 py-2">{{ mo.quantity }}</td>
+                            <td class="px-4 py-2">{{ mo.unit }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-gray-400 py-4">No Manufacturing Orders Found</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

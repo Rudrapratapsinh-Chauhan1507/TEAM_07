@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Manufacturing Order</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen p-6">
+
+    <h1 class="text-2xl font-bold mb-6">New Manufacturing Order</h1>
+
+    <form id="orderForm" method="post" action="{% url 'new_order' %}" class="space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="status" id="statusInput" value="Draft">
+
+        <!-- Order Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block text-gray-400 mb-1">Reference #</label>
+                <input type="text" name="reference" value="{{ mo.reference|default:'' }}" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">Schedule Date *</label>
+                <input type="date" name="schedule_date" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">Finished Product *</label>
+                <select name="product" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">Assignee</label>
+                <select name="assignee" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+                    {% for user in users %}
+                    <option value="{{ user.username }}">{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">Quantity *</label>
+                <div class="flex space-x-2">
+                    <input type="number" name="quantity" value="1" class="flex-1 rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+                    <select name="unit" class="w-28 rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+                        {% for unit, label in product.unit_choices %}
+                        <option value="{{ unit }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-gray-400 mb-1">Bill of Material</label>
+                <select name="bom" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+                    {% for bom in boms %}
+                    <option value="{{ bom.id }}">{{ bom.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Components Table -->
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold mb-3 text-cyan-400">Components</h2>
+            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-700 text-gray-200">
+                    <tr>
+                        <th class="px-4 py-2">Component</th>
+                        <th class="px-4 py-2">Availability</th>
+                        <th class="px-4 py-2">To Consume</th>
+                        <th class="px-4 py-2">Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in components %}
+                    <tr class="border-b border-gray-700">
+                        <td class="px-4 py-2">{{ comp.name }}</td>
+                        <td class="px-4 py-2">{{ comp.available_quantity }}</td>
+                        <td class="px-4 py-2">
+                            <input type="number" name="to_consume[]" value="0" class="w-full rounded-lg px-2 py-1 bg-gray-800 text-gray-200 border border-gray-700">
+                        </td>
+                        <td class="px-4 py-2">{{ comp.unit }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-gray-400 py-4">No components found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="mt-2 bg-cyan-500 text-white px-3 py-1 rounded hover:bg-cyan-600">+ Add Component</button>
+        </div>
+
+        <!-- Work Orders Table -->
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold mb-3 text-cyan-400">Work Orders</h2>
+            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
+                <thead class="bg-gray-700 text-gray-200">
+                    <tr>
+                        <th class="px-4 py-2">Work Order</th>
+                        <th class="px-4 py-2">Status</th>
+                        <th class="px-4 py-2">Assigned To</th>
+                        <th class="px-4 py-2">Progress</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for wo in work_orders %}
+                    <tr class="border-b border-gray-700">
+                        <td class="px-4 py-2">{{ wo.reference }}</td>
+                        <td class="px-4 py-2">{{ wo.status }}</td>
+                        <td class="px-4 py-2">{{ wo.assigned_to }}</td>
+                        <td class="px-4 py-2">{{ wo.progress }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-gray-400 py-4">No work orders found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" class="mt-2 bg-cyan-500 text-white px-3 py-1 rounded hover:bg-cyan-600">+ Add Work Order</button>
+        </div>
+
+        <div class="mt-6">
+            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">Save Manufacturing Order</button>
+        </div>
+    </form>
+
+</body>
+</html>
