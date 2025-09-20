@@ -70,14 +70,17 @@
 <body class="flex">
 
   <!-- Sidebar -->
-  <aside class="sidebar p-4">
-    <h2 class="text-xl font-bold text-white mb-4">Master Menu</h2>
-    <a href="#">Manufacturing Orders</a>
-    <a href="#">Work Orders</a>
-    <a href="#">Bill of Materials</a>
-    <a href="#">Work Center</a>
-    <a href="#" class="active">Stock Ledger</a>
-  </aside>
+<div class="w-64 bg-gray-800 min-h-screen p-6 space-y-6">
+  <h1 class="text-xl font-bold mb-6">ManufacturingPro</h1>
+  <ul class="space-y-3">
+    <li><a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing
+        Products</a></li>
+    <li><a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a></li>
+    <li><a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a></li>
+    <li><a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a></li>
+    <li><a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a></li>
+  </ul>
+</div>
 
   <!-- Main Content -->
   <main class="flex-1 p-6">
@@ -86,48 +89,36 @@
       <h1 class="text-3xl font-bold">Stock Ledger</h1>
     </div>
 
-    <!-- Stock Ledger Table -->
-    <div class="card overflow-x-auto mb-8">
-      <table class="table-auto w-full text-left">
-        <thead class="text-gray-400 border-b border-gray-700">
-          <tr>
-            <th class="px-4 py-2">Product</th>
-            <th class="px-4 py-2">Unit Cost</th>
-            <th class="px-4 py-2">Unit</th>
-            <th class="px-4 py-2">Total Value</th>
-            <th class="px-4 py-2">On Hand</th>
-            <th class="px-4 py-2">Free to Use</th>
-            <th class="px-4 py-2">Incoming</th>
-            <th class="px-4 py-2">Outgoing</th>
-            <th class="px-4 py-2 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for product in products %}
-          <tr class="hover:bg-gray-700/50">
-            <td class="px-4 py-2">{{ product.name }}</td>
-            <td class="px-4 py-2">{{ product.unit_cost }}</td>
-            <td class="px-4 py-2">{{ product.unit }}</td>
-            <td class="px-4 py-2">{{ product.total_value }}</td>
-            <td class="px-4 py-2">{{ product.on_hand }}</td>
-            <td class="px-4 py-2">{{ product.free_to_use }}</td>
-            <td class="px-4 py-2">{{ product.incoming }}</td>
-            <td class="px-4 py-2">{{ product.outgoing }}</td>
-            <td class="px-4 py-2 text-center">
-              <a href="{% url 'stock_product_edit' product.id %}" class="btn btn-warning btn-sm">
-                <i class="bi bi-pencil-square"></i> Edit
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="9" class="text-center py-2 text-gray-400">No products found.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
+    <!-- Stock Ledger Movements -->
+<div class="card overflow-x-auto mb-8 mt-8">
+  <h2 class="text-2xl font-semibold mb-4">Stock Movements</h2>
+  <table class="table-auto w-full text-left">
+    <thead class="text-gray-400 border-b border-gray-700">
+      <tr>
+        <th class="px-4 py-2">Product</th>
+        <th class="px-4 py-2">Movement</th>
+        <th class="px-4 py-2">Quantity</th>
+        <th class="px-4 py-2">Reference</th>
+        <th class="px-4 py-2">Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in ledger_entries %}
+      <tr>
+        <td>{{ entry.product.name }}</td>
+        <td>{{ entry.get_movement_type_display }}</td>
+        <td>{{ entry.quantity }}</td>
+        <td>{{ entry.reference }}</td>
+        <td>{{ entry.timestamp }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="5" class="text-center text-gray-400">No ledger entries found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
     <!-- Product Entry Form -->
     <div class="card">
       <h2 class="text-xl font-semibold mb-4">{% if edit_product %}Edit{% else %}Add{% endif %} Product</h2>
@@ -143,5 +134,4 @@
     </div>
   </main>
 </body>
-
 </html>

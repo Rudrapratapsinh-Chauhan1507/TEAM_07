@@ -10,10 +10,17 @@ urlpatterns = [
     path('work_order_analysis/', views.work_order_analysis, name='work_order_analysis'),
     path('manufacturing_products/', views.manufacturing_products, name='manufacturing_products'),
     path('work_products/', views.work_products, name='work_products'),
+    path('work_order/<int:pk>/', views.view_work_order, name='view_work_order'),
+    path('work_order/<int:pk>/edit/', views.edit_work_order, name='edit_work_order'),
+    path('work_order/delete/<int:pk>/', views.delete_work_order, name='delete_work_order'),
     path('bills_of_materials/', views.bills_of_materials, name='bills_of_materials'),
     path("new_manufacturing/", views.new_manufacturing_order, name="new_manufacturing_order"),
+    path("manufacturing/new/", views.new_manufacturing_order, name="new_manu"),
+    path('get_components/<int:bom_id>/', views.get_components, name='get_components'),
     path('work_center', views.work_center, name='work_center'),
     path("new-order/", views.new_order, name="new_order"),
     path('stock_ledger', views.stock_ledger, name='stock_ledger'),
+    path('stock_ledger/edit/<int:product_id>/', views.stock_product_edit, name='stock_product_edit'),
     path("stock_ledger/new/", views.stock_product_new, name="stock_product_new"),
 ]
+

@@ -1,55 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bills of Materials</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Inter, sans-serif;
+        }
+
+        .form-control {
+            background: #0f172a;
+            border: 1px solid #475569;
+            padding: 8px;
+            border-radius: 8px;
+            width: 100%;
+            color: #fff;
+        }
+
+        .form-control:focus {
+            border-color: #06B6D4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5);
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-200 flex">
+
+<body class="bg-gray-900 text-gray-200 min-h-screen flex">
 
     <!-- Sidebar -->
-    <div class="w-64 bg-gray-800 min-h-screen p-6 space-y-6">
-        <h1 class="text-xl font-bold mb-6">Master Menu</h1>
-        <ul class="space-y-3">
-            <li><a href="{% url 'manufacturing_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a></li>
-            <li><a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a></li>
-            <li><a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded bg-gray-700">Bills of Materials</a></li>
-            <li><a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a></li>
-            <li><a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a></li>
-        </ul>
-    </div>
+    <aside class="w-64 bg-gray-800 p-6 min-h-screen">
+        <h2 class="text-xl font-bold text-white mb-6">ManufacturingPro</h2>
+        <nav class="space-y-3">
+            <a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing
+                Products</a>
+            <a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a>
+            <a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700 bg-gray-700">Bills
+                of Materials</a>
+            <a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a>
+            <a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a>
+        </nav>
+    </aside>
 
     <!-- Main Content -->
-    <div class="flex-1 p-6 space-y-8">
-        <h1 class="text-2xl font-bold mb-4">Bills of Materials</h1>
+    <main class="flex-1 p-6">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <h1 class="text-3xl font-bold text-white">Bills of Materials</h1>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'new_order' %}"
+                    class="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition duration-200">
+                    <i class="bi bi-plus-circle"></i> New BOM
+                </a>
+                <input type="text" placeholder="Search..." class="form-control w-full md:w-64">
+            </div>
+        </div>
 
-        <div class="overflow-x-auto bg-gray-800 p-4 rounded-lg">
-            <table class="min-w-full table-auto">
+        <!-- BOM Table -->
+        <div class="bg-gray-800 rounded-xl shadow-xl p-6 overflow-x-auto">
+            <table class="min-w-full text-left">
                 <thead class="bg-gray-700 text-gray-200">
                     <tr>
-                        <th class="px-4 py-2">BOM Name</th>
-                        <th class="px-4 py-2">Product</th>
-                        <th class="px-4 py-2">Quantity</th>
-                        <th class="px-4 py-2">Unit</th>
+                        <th class="px-6 py-3">Reference</th>
+                        <th class="px-6 py-3">Product</th>
+                        <th class="px-6 py-3">Quantity</th>
+                        <th class="px-6 py-3">Unit</th>
+                        <th class="px-6 py-3">Components</th>
+                        <th class="px-6 py-3">Operations</th>
+                        <th class="px-6 py-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="text-gray-200">
                     {% for bom in boms %}
-                        <tr class="border-b border-gray-700">
-                            <td class="px-4 py-2">{{ bom.name }}</td>
-                            <td class="px-4 py-2">{{ bom.product.name }}</td>
-                            <td class="px-4 py-2">{{ bom.quantity }}</td>
-                            <td class="px-4 py-2">{{ bom.unit }}</td>
-                        </tr>
+                    <tr class="border-b border-gray-700 hover:bg-gray-600 transition duration-150">
+                        <td class="px-6 py-3">{{ bom.name }}</td>
+                        <td class="px-6 py-3">{{ bom.product.name }}</td>
+                        <td class="px-6 py-3">{{ bom.quantity }}</td>
+                        <td class="px-6 py-3">{{ bom.unit }}</td>
+                        <td class="px-6 py-3">
+                            {% for component in bom.components.all %}
+                            <span class="inline-block px-2 py-1 bg-gray-700 rounded text-sm mr-1">{{ component.name }}
+                                ({{ component.quantity }} {{ component.unit }})</span>
+                            {% empty %}
+                            <span class="text-gray-400">No Components</span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-3">
+                            {% for op in bom.operations.all %}
+                            <span class="inline-block px-2 py-1 bg-gray-700 rounded text-sm mr-1">{{ op.name }} ({{
+                                op.time_minutes }} mins)</span>
+                            {% empty %}
+                            <span class="text-gray-400">No Operations</span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-3">
+                            <a href="{% url 'edit_work_order' bom.id %}"
+                                class="text-indigo-500 hover:text-indigo-400 mr-2"><i class="bi bi-pencil"></i></a>
+                            <a href="{% url 'delete_work_order' bom.id %}" class="text-red-500 hover:text-red-400"><i
+                                    class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-gray-400 py-4">No BOMs found.</td>
-                        </tr>
+                    <tr>
+                        <td colspan="7" class="text-center text-gray-400 py-6">No BOMs Found</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </main>
 
 </body>
+
 </html>

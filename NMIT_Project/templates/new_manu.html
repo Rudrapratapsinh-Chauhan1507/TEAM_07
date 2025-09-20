@@ -2,136 +2,335 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>New Manufacturing Order</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Manufacturing Order</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Inter, sans-serif;
+        }
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23A1A1AA'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1rem;
+        }
+        select:focus {
+            outline: none;
+            border-color: #06B6D4;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5);
+        }
+        .form-control {
+            background: #0f172a;
+            border: 1px solid #475569;
+            padding: 8px 12px;
+            border-radius: 8px;
+            width: 100%;
+            color: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus {
+            border-color: #06B6D4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5);
+        }
+        .form-control:disabled, .form-control[readonly] {
+            background: #1e293b;
+            opacity: 0.7;
+        }
+        .form-control:invalid {
+            border-color: #ef4444;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-200 min-h-screen p-6">
+<body class="bg-gray-900 text-gray-200 min-h-screen flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gray-800 p-6 min-h-screen">
+        <h2 class="text-xl font-bold text-white mb-6">Master Menu</h2>
+        <nav class="space-y-3">
+            <a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded bg-gray-700 text-cyan-400">Manufacturing Orders</a>
+            <a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700 hover:text-cyan-400 {% if request.path == '/work_products/' %}bg-gray-700 text-cyan-400{% endif %}">Work Orders</a>
+            <a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700 hover:text-cyan-400 {% if request.path == '/bills_of_materials/' %}bg-gray-700 text-cyan-400{% endif %}">Bill of Materials</a>
+            <a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700 hover:text-cyan-400 {% if request.path == '/work_center/' %}bg-gray-700 text-cyan-400{% endif %}">Work Center</a>
+            <a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700 hover:text-cyan-400 {% if request.path == '/stock_ledger/' %}bg-gray-700 text-cyan-400{% endif %}">Stock Ledger</a>
+        </nav>
+    </aside>
 
-    <h1 class="text-2xl font-bold mb-6">New Manufacturing Order</h1>
-
-    <form id="orderForm" method="post" action="{% url 'new_order' %}" class="space-y-6">
-        {% csrf_token %}
-        <input type="hidden" name="status" id="statusInput" value="Draft">
-
-        <!-- Order Info -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <label class="block text-gray-400 mb-1">Reference #</label>
-                <input type="text" name="reference" value="{{ mo.reference|default:'' }}" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
+    <!-- Main Content -->
+    <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-600{% else %}bg-green-600{% endif %} text-white shadow-lg">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             </div>
+        {% endif %}
 
-            <div>
-                <label class="block text-gray-400 mb-1">Schedule Date *</label>
-                <input type="date" name="schedule_date" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
-            </div>
+        <!-- Form Container -->
+        <div class="max-w-5xl mx-auto bg-gray-800 rounded-xl shadow-xl p-6 sm:p-8">
+            <h1 class="text-3xl font-bold text-cyan-400 mb-8">New Manufacturing Order</h1>
+            <form id="orderForm" method="post" action="{% url 'new_manufacturing_order' %}" class="space-y-8">
+                {% csrf_token %}
+                <input type="hidden" name="status" id="statusInput" value="Draft">
 
-            <div>
-                <label class="block text-gray-400 mb-1">Finished Product *</label>
-                <select name="product" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
-                    {% for product in products %}
-                    <option value="{{ product.id }}">{{ product.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-gray-400 mb-1">Assignee</label>
-                <select name="assignee" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
-                    {% for user in users %}
-                    <option value="{{ user.username }}">{{ user.username }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-gray-400 mb-1">Quantity *</label>
-                <div class="flex space-x-2">
-                    <input type="number" name="quantity" value="1" class="flex-1 rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
-                    <select name="unit" class="w-28 rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
-                        {% for unit, label in product.unit_choices %}
-                        <option value="{{ unit }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
+                <!-- Order Info -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-gray-300 font-medium mb-2">Reference # <span class="text-red-400">*</span></label>
+                        <input type="text" name="reference" value="{{ request.POST.reference|default:mo.reference|default:'' }}"
+                               class="form-control" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 font-medium mb-2">Schedule Date <span class="text-red-400">*</span></label>
+                        <input type="date" name="schedule_date" value="{{ request.POST.schedule_date|default:'' }}"
+                               class="form-control" required>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 font-medium mb-2">Finished Product <span class="text-red-400">*</span></label>
+                        <select name="product" class="form-control" required onchange="fetchProductUnit(this.value)">
+                            <option value="" disabled {% if not request.POST.product %}selected{% endif %}>Select a product</option>
+                            {% for product in products %}
+                                <option value="{{ product.id }}" {% if request.POST.product == product.id|stringformat:"s" %}selected{% endif %}>{{ product.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 font-medium mb-2">Assignee</label>
+                        <select name="assignee" class="form-control">
+                          <option value="" {% if not request.POST.assignee %}selected{% endif %}>No assignee</option>
+                          {% for user in users %}
+                              <option value="{{ user.id }}" {% if request.POST.assignee == user.id|stringformat:"s" %}selected{% endif %}>
+                                  {{ user.username }}
+                              </option>
+                          {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 font-medium mb-2">Quantity <span class="text-red-400">*</span></label>
+                        <div class="flex space-x-3">
+                            <input type="number" name="quantity" value="{{ request.POST.quantity|default:'1' }}" min="1" step="0.01"
+                                   class="form-control flex-1" required>
+                            <select name="unit" id="unit" class="form-control w-28 text-sm" required>
+                              <option value="" disabled selected>Select</option>
+                              {% for value, label in units %}
+                                  <option value="{{ value }}" {% if request.POST.unit == value %}selected{% endif %}>
+                                      {{ label }}
+                                  </option>
+                              {% endfor %}
+                            </select>
+                        </div>
+                    </div> 
+                    <div>
+                        <label class="block text-gray-300 font-medium mb-2">Bill of Material</label>
+                        <select name="bom" class="form-control" onchange="fetchComponents(this.value)">
+                            <option value="" {% if not request.POST.bom %}selected{% endif %}>No BOM</option>
+                            {% for bom in boms %}
+                                <option value="{{ bom.id }}" {% if request.POST.bom == bom.id|stringformat:"s" %}selected{% endif %}>{{ bom.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-            </div>
 
-            <div>
-                <label class="block text-gray-400 mb-1">Bill of Material</label>
-                <select name="bom" class="w-full rounded-lg px-4 py-2 bg-gray-800 text-gray-200 border border-gray-700">
-                    {% for bom in boms %}
-                    <option value="{{ bom.id }}">{{ bom.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                <!-- Components Table -->
+                <div class="mt-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-cyan-400">Components</h2>
+                        <button type="button" id="addComponentBtn"
+                                class="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition duration-200"
+                                title="Add a new component">
+                            <i class="bi bi-plus-circle"></i> Add Component
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-gray-700 rounded-lg overflow-hidden">
+                            <thead class="bg-gray-600 text-gray-200">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Component</th>
+                                    <th class="px-6 py-3 text-left">Availability</th>
+                                    <th class="px-6 py-3 text-left">To Consume</th>
+                                    <th class="px-6 py-3 text-left">Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody id="componentsTable">
+                                {% for comp in components %}
+                                    <tr class="border-b border-gray-600 hover:bg-gray-600 transition duration-150">
+                                        <td class="px-6 py-3">{{ comp.name }}</td>
+                                        <td class="px-6 py-3">{{ comp.available_quantity }}</td>
+                                        <td class="px-6 py-3">
+                                            <input type="number" name="to_consume[]" value="{{ request.POST.to_consume|default:'0' }}" min="0" step="0.01" class="form-control">
+                                        </td>
+                                        <td class="px-6 py-3">{{ comp.unit }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-gray-400 py-6">No components found</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="mt-8 flex justify-end gap-4">
+                    <a href="{% url 'work_order_analysis' %}"
+                       class="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-4 py-2 rounded-lg hover:from-gray-700 hover:to-gray-800 transition duration-200"
+                       title="Back to dashboard">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
+                    <button type="submit" id="submitBtn"
+                            class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Save the manufacturing order">
+                        <i class="bi bi-save"></i> Save
+                    </button>
+                </div>
+            </form>
         </div>
+    </main>
 
-        <!-- Components Table -->
-        <div class="mt-6">
-            <h2 class="text-xl font-semibold mb-3 text-cyan-400">Components</h2>
-            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
-                <thead class="bg-gray-700 text-gray-200">
+    <!-- JavaScript for Dynamic Behavior -->
+    <script>
+        // Prevent form submission if required fields are invalid
+        document.getElementById('orderForm').addEventListener('submit', function(event) {
+            const requiredFields = document.querySelectorAll('.form-control[required]');
+            let isValid = true;
+            requiredFields.forEach(field => {
+                if (!field.value || (field.tagName === 'SELECT' && field.value === '')) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+            if (!isValid) {
+                event.preventDefault();
+                alert('Please fill in all required fields with valid values.');
+            } else {
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-save"></i> Saving...';
+            }
+        });
+
+        // Add Component Button
+        document.getElementById('addComponentBtn').addEventListener('click', function() {
+            const tbody = document.getElementById('componentsTable');
+            const noComponentsRow = tbody.querySelector('tr td[colspan="4"]');
+            if (noComponentsRow) {
+                noComponentsRow.parentElement.remove();
+            }
+            tbody.innerHTML += `
+                <tr class="border-b border-gray-600 hover:bg-gray-600 transition duration-150">
+                    <td class="px-6 py-3">
+                        <input type="text" name="component_name[]" placeholder="Enter component name" class="form-control">
+                    </td>
+                    <td class="px-6 py-3">
+                        <input type="number" name="component_availability[]" value="0" min="0" step="0.01" class="form-control">
+                    </td>
+                    <td class="px-6 py-3">
+                        <input type="number" name="to_consume[]" value="0" min="0" step="0.01" class="form-control">
+                    </td>
+                    <td class="px-6 py-3">
+                        <input type="text" name="component_unit[]" value="pcs" class="form-control">
+                    </td>
+                </tr>`;
+        });
+
+        // Fetch components dynamically based on BOM selection
+        async function fetchComponents(bomId) {
+            if (!bomId) {
+                document.getElementById('componentsTable').innerHTML = `
                     <tr>
-                        <th class="px-4 py-2">Component</th>
-                        <th class="px-4 py-2">Availability</th>
-                        <th class="px-4 py-2">To Consume</th>
-                        <th class="px-4 py-2">Unit</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for comp in components %}
-                    <tr class="border-b border-gray-700">
-                        <td class="px-4 py-2">{{ comp.name }}</td>
-                        <td class="px-4 py-2">{{ comp.available_quantity }}</td>
-                        <td class="px-4 py-2">
-                            <input type="number" name="to_consume[]" value="0" class="w-full rounded-lg px-2 py-1 bg-gray-800 text-gray-200 border border-gray-700">
+                        <td colspan="4" class="text-center text-gray-400 py-6">No components found</td>
+                    </tr>`;
+                return;
+            }
+            const response = await fetch(/get_components/${bomId}/);
+            const data = await response.json();
+            const tbody = document.getElementById('componentsTable');
+            tbody.innerHTML = data.components.length ? '' : `
+                <tr>
+                    <td colspan="4" class="text-center text-gray-400 py-6">No components found</td>
+                </tr>`;
+            data.components.forEach(comp => {
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-600 hover:bg-gray-600 transition duration-150">
+                        <td class="px-6 py-3">${comp.name}</td>
+                        <td class="px-6 py-3">${comp.available_quantity}</td>
+                        <td class="px-6 py-3">
+                            <input type="number" name="to_consume[]" value="0" min="0" step="0.01" class="form-control">
                         </td>
-                        <td class="px-4 py-2">{{ comp.unit }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-gray-400 py-4">No components found</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <button type="button" class="mt-2 bg-cyan-500 text-white px-3 py-1 rounded hover:bg-cyan-600">+ Add Component</button>
-        </div>
+                        <td class="px-6 py-3">${comp.unit}</td>
+                    </tr>`;
+            });
+        }
 
-        <!-- Work Orders Table -->
-        <div class="mt-6">
-            <h2 class="text-xl font-semibold mb-3 text-cyan-400">Work Orders</h2>
-            <table class="min-w-full bg-gray-800 rounded-lg overflow-hidden">
-                <thead class="bg-gray-700 text-gray-200">
-                    <tr>
-                        <th class="px-4 py-2">Work Order</th>
-                        <th class="px-4 py-2">Status</th>
-                        <th class="px-4 py-2">Assigned To</th>
-                        <th class="px-4 py-2">Progress</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for wo in work_orders %}
-                    <tr class="border-b border-gray-700">
-                        <td class="px-4 py-2">{{ wo.reference }}</td>
-                        <td class="px-4 py-2">{{ wo.status }}</td>
-                        <td class="px-4 py-2">{{ wo.assigned_to }}</td>
-                        <td class="px-4 py-2">{{ wo.progress }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-gray-400 py-4">No work orders found</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <button type="button" class="mt-2 bg-cyan-500 text-white px-3 py-1 rounded hover:bg-cyan-600">+ Add Work Order</button>
-        </div>
+        // Fetch product unit dynamically based on product selection
+        async function fetchProductUnit(productId) {
+            const unitSelect = document.querySelector('select[name="unit"]');
+            if (!productId) {
+                unitSelect.value = '';
+                unitSelect.dispatchEvent(new Event('change'));
+                return;
+            }
+            try {
+                const response = await fetch(/get_product/${productId}/);
+                const data = await response.json();
+                unitSelect.value = data.unit || 'Units'; // Default to 'Units' if no unit
+                unitSelect.dispatchEvent(new Event('change'));
+            } catch (error) {
+                console.error('Error fetching product unit:', error);
+                unitSelect.value = 'Units';
+                unitSelect.dispatchEvent(new Event('change'));
+            }
+        }
 
-        <div class="mt-6">
-            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">Save Manufacturing Order</button>
-        </div>
-    </form>
+        // Real-time validation feedback
+        document.querySelectorAll('.form-control[required]').forEach(input => {
+            input.addEventListener('input', function() {
+                if (!this.value || (this.tagName === 'SELECT' && this.value === '')) {
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                    this.classList.add('text-white');
+                }
+            });
+            input.addEventListener('change', function() {
+                if (!this.value || (this.tagName === 'SELECT' && this.value === '')) {
+                    this.classList.add('border-red-500');
+                } else {
+                    this.classList.remove('border-red-500');
+                    this.classList.add('text-white');
+                }
+            });
+        });
 
+        // Initialize unit dropdown
+        document.querySelector('select[name="unit"]').addEventListener('change', function() {
+            if (this.value) {
+                this.classList.remove('text-gray-500');
+                this.classList.add('text-white');
+            } else {
+                this.classList.add('text-gray-500');
+                this.classList.remove('text-white');
+            }
+        });
+
+        // Trigger initial validation and set default unit if product is selected
+        document.querySelectorAll('.form-control[required]').forEach(input => {
+            input.dispatchEvent(new Event('input'));
+        });
+        const productSelect = document.querySelector('select[name="product"]');
+        if (productSelect.value) {
+            fetchProductUnit(productSelect.value);
+        }
+    </script>
 </body>
 </html>

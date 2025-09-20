@@ -1,87 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Manufacturing Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manufacturing Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Inter, sans-serif;
+        }
+
+        .form-control {
+            background: #0f172a;
+            border: 1px solid #475569;
+            padding: 8px;
+            border-radius: 8px;
+            width: 100%;
+            color: #fff;
+        }
+
+        .form-control:focus {
+            border-color: #06B6D4;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.5);
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-200 flex">
 
-    <!-- Sidebar -->
-    <div class="w-64 bg-gray-800 min-h-screen p-6 space-y-6">
-        <h1 class="text-xl font-bold mb-6">Master Menu</h1>
-        <ul class="space-y-3">
-            <li><a href="{% url 'manufacturing_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a></li>
-            <li><a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a></li>
-            <li><a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a></li>
-            <li><a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a></li>
-            <li><a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a></li>
-        </ul>
-    </div>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex">
+    <aside class="w-64 bg-gray-800 p-6 min-h-screen">
+        <h2 class="text-xl font-bold text-white mb-6">ManufacturingPro</h2>
+        <nav class="space-y-3">
+            <a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a>
+            <a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a>
+            <a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a>
+            <a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a>
+            <a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a>
+        </nav>
+    </aside>
 
-    <!-- Main Content -->
-    <div class="flex-1 p-6 space-y-8">
+    <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <h1 class="text-3xl font-bold text-white">Manufacturing Dashboard</h1>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'new_manu' %}"
+                    class="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-cyan-600 hover:to-cyan-700 transition duration-200"
+                    title="Create new manufacturing order">
+                    <i class="bi bi-plus-circle"></i> New Manufacturing Order
+                </a>
+                <input type="text" placeholder="Search..." class="form-control w-full md:w-64">
+                <div class="flex space-x-3">
+                    <button class="p-2 rounded bg-gray-700 hover:bg-gray-600" title="Copy"><i
+                            class="bi bi-clipboard"></i></button>
+                    <button class="p-2 rounded bg-gray-700 hover:bg-gray-600" title="Stats"><i
+                            class="bi bi-bar-chart"></i></button>
+                </div>
+            </div>
+        </div>
+{% comment %} 
+        <!-- ✅ Added counts -->
+        <div class="mb-8 space-y-2">
+            <p>Total Orders: {{ all_count }}</p>
+            <p>Draft: {{ draft_count }}</p>
+            <p>In Progress: {{ progress_count }}</p>
+            <p>Completed: {{ completed_count }}</p>
+        </div> {% endcomment %}
 
-        <!-- Toolbar -->
-        <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-            <a href="{% url 'new_manufacturing_order' %}" class="bg-cyan-500 text-white px-4 py-2 rounded hover:bg-cyan-600">+ New Manufacturing Order</a>
-            <input type="text" placeholder="Search..." class="border rounded-lg px-4 py-2 w-full md:w-1/2 bg-gray-800 text-gray-200 border-gray-600">
-            <div class="flex space-x-3">
-                <button class="p-2 rounded bg-gray-700 hover:bg-gray-600">📋</button>
-                <button class="p-2 rounded bg-gray-700 hover:bg-gray-600">📊</button>
+        <!-- Status Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-7 gap-4 mb-8">
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">{{ all_count }}</h2>
+                <p class="text-gray-400">All</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">{{ draft_count }}</h2>
+                <p class="text-gray-400">Drafts</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">—</h2>
+                <p class="text-gray-400">Confirmed</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">{{ progress_count }}</h2>
+                <p class="text-gray-400">In-Progress</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">—</h2>
+                <p class="text-gray-400">To Close</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">—</h2>
+                <p class="text-gray-400">Not Assigned</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
+                <h2 class="text-xl font-semibold">—</h2>
+                <p class="text-gray-400">Late</p>
             </div>
         </div>
 
-        <!-- Status Filters -->
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-            {% for status, orders in orders_by_status %}
-                <div class="bg-gray-800 p-4 rounded-lg">
-                    <h2 class="text-lg font-semibold mb-2">{{ status }}</h2>
-                    <ul class="text-gray-300">
-                        {% for order in orders %}
-                            <li>{{ order.name }} - {{ order.status }}</li>
-                        {% empty %}
-                            <li>No orders in this status.</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
-        </div>
-
         <!-- Orders Table -->
-        <div class="overflow-x-auto bg-gray-800 p-4 rounded-lg">
-            <table class="min-w-full table-auto">
+        <div class="bg-gray-800 rounded-xl shadow-xl p-6 overflow-x-auto">
+            <table class="min-w-full text-left">
                 <thead class="bg-gray-700 text-gray-200">
                     <tr>
-                        <th class="px-4 py-2"><input type="checkbox"></th>
-                        <th class="px-4 py-2">Reference</th>
-                        <th class="px-4 py-2">Schedule Date</th>
-                        <th class="px-4 py-2">Finished Product</th>
-                        <th class="px-4 py-2">Status</th>
-                        <th class="px-4 py-2">Quantity</th>
-                        <th class="px-4 py-2">Unit</th>
+                        <th class="px-6 py-3"><input type="checkbox" id="selectAll"></th>
+                        <th class="px-6 py-3">Reference</th>
+                        <th class="px-6 py-3">Schedule Date</th>
+                        <th class="px-6 py-3">Finished Product</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3">Quantity</th>
+                        <th class="px-6 py-3">Unit</th>
                     </tr>
                 </thead>
                 <tbody class="text-gray-200">
                     {% for mo in manufacturing_orders %}
-                        <tr class="border-b border-gray-700">
-                            <td class="px-4 py-2"><input type="checkbox"></td>
-                            <td class="px-4 py-2">{{ mo.reference }}</td>
-                            <td class="px-4 py-2">{{ mo.schedule_date }}</td>
-                            <td class="px-4 py-2">{{ mo.product.name }}</td>
-                            <td class="px-4 py-2">{{ mo.status }}</td>
-                            <td class="px-4 py-2">{{ mo.quantity }}</td>
-                            <td class="px-4 py-2">{{ mo.unit }}</td>
-                        </tr>
+                    <tr class="border-b border-gray-700 hover:bg-gray-600 transition duration-150">
+                        <td class="px-6 py-3"><input type="checkbox" class="order-checkbox"></td>
+                        <td class="px-6 py-3">{{ mo.reference }}</td>
+                        <td class="px-6 py-3">{{ mo.schedule_date }}</td>
+                        <td class="px-6 py-3">{{ mo.product.name }}</td>
+                        <td class="px-6 py-3">{{ mo.status }}</td>
+                        <td class="px-6 py-3">{{ mo.quantity }}</td>
+                        <td class="px-6 py-3">{{ mo.unit }}</td>
+                    </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center text-gray-400 py-4">No Manufacturing Orders Found</td>
-                        </tr>
+                    <tr>
+                        <td colspan="7" class="text-center text-gray-400 py-6">No Manufacturing Orders Found</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
+    </main>
+
+    <script>
+        document.getElementById('selectAll').addEventListener('change', function () {
+            document.querySelectorAll('.order-checkbox').forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    </script>
 </body>
+
 </html>

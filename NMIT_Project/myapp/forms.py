@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import ManufacturingOrder, Product, BillOfMaterial, WorkCenter,Profile
+from .models import ManufacturingOrder, Product,BillofMaterials, WorkCenter,Profile
 
 class SignupForm(forms.Form):
     username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))

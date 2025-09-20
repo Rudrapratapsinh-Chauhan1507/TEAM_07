@@ -48,22 +48,22 @@
       {% csrf_token %}
       <div class="mb-4">
         <label class="block text-gray-300 mb-2">User Name</label>
-        <input type="text" name="username" class="form-control bg-gray-800 text-white border-0"
+        <input type="text" name="username" class="form-control-sm w-full bg-gray-800 text-white border-0"
           placeholder="Enter username" required />
       </div>
       <div class="mb-4">
         <label class="block text-gray-300 mb-2">Full Name</label>
-        <input type="text" name="full_name" class="form-control bg-gray-800 text-white border-0"
+        <input type="text" name="full_name" class="form-control-sm w-full bg-gray-800 text-white border-0"
           placeholder="Enter full name" required />
       </div>
       <div class="mb-4">
         <label class="block text-gray-300 mb-2">Email</label>
-        <input type="email" name="email" class="form-control bg-gray-800 text-white border-0" placeholder="Enter email"
+        <input type="email" name="email" class="form-control-sm w-full bg-gray-800 text-white border-0" placeholder="Enter email"
           required />
       </div>
       <div class="mb-4">
         <label class="block text-gray-300 mb-2">Password</label>
-        <input type="password" name="password" class="form-control bg-gray-800 text-white border-0"
+        <input type="password" name="password" class="form-control-sm w-full bg-gray-800 text-white border-0"
           placeholder="Enter password" required />
       </div>
       <button type="submit" class="glow-btn w-full py-2 rounded-lg text-white font-semibold">
@@ -90,5 +90,4 @@
     {% endif %}
   </script>
 </body>
-
 </html>

@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -7,10 +7,16 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import EmailOTP
 from django.core.mail import EmailMultiAlternatives
-from .models import Product, BillOfMaterial, Component
-from .models import ManufacturingOrder
+from .models import Product,BillofMaterials, Component
+from .models import ManufacturingOrder, ManufacturingOrderComponent, Product, BillofMaterials, Component, User
+from django.http import JsonResponse
+from django.utils import timezone
+from .models import StockLedgerEntry
 from .forms import ProductForm
-
+import datetime
+from django.db.models import Count, Q
+# from .models import BOM
+from .forms import ManufacturingOrderForm 
 
 def signup_view(request):
     if request.method == "POST":
@@ -81,8 +87,9 @@ def verify_otp(request):
                 user.is_active = True
                 user.save()
                 otp_instance.delete()
-                messages.success(request, "🎉 Email verified successfully! You can now login.")
-                return redirect('login')
+                messages.success(request, "🎉 Email verified successfully! Please login now.")
+                return redirect('work_order_analysis')   # ✅ login page pe redirect karega
+
             else:
                 messages.error(request, "❌ Invalid or expired OTP. Try again.")
         except (User.DoesNotExist, EmailOTP.DoesNotExist):
@@ -135,95 +142,113 @@ def forgot_password(request):
         form = ForgotPasswordForm()
     return render(request, "forgot_password.html", {"form": form})
 
-
 def work_order_analysis(request):
-    statuses = ['Draft', 'Confirmed', 'In-Progress', 'To Close', 'Not Assigned', 'Late']
+    all_orders = ManufacturingOrder.objects.all()
+    status_counts = {
+            'All': all_orders.count(),
+            'Draft': all_orders.filter(status='Draft').count(),
+            'Confirmed': all_orders.filter(status='Confirmed').count(),
+            'In Progress': all_orders.filter(status='In Progress').count(),
+            'Completed': all_orders.filter(status='Completed').count(),
+            'To Close': all_orders.filter(status='To Close').count(),
+            'Not Assigned': all_orders.filter(assignee__isnull=True).count(),
+            'Late': all_orders.filter(schedule_date__lt=timezone.now(), status__in=['Draft', 'In Progress']).count(),
+        }
+    return render(request, 'work_order_analysis.html', {
+                'manufacturing_orders': all_orders,
+                **status_counts
+            })
 
-    # Get all manufacturing orders
-    manufacturing_orders = ManufacturingOrder.objects.all()
-
-    # Group orders by status
-    orders_by_status = [(status, manufacturing_orders.filter(status=status)) for status in statuses]
-
-    context = {
-        'manufacturing_orders': manufacturing_orders,
-        'orders_by_status': orders_by_status,
-    }
-
-    return render(request, 'work_order_analysis.html', context)
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import ManufacturingOrder, ManufacturingOrderComponent, Product, BillOfMaterial, Component, User
-from django.utils import timezone
 
 def new_manufacturing_order(request):
     if request.method == 'POST':
-        # Extract form data
-        reference = request.POST.get('reference')
+        reference = request.POST.get('reference') or generate_reference()
         schedule_date = request.POST.get('schedule_date')
         product_id = request.POST.get('product')
-        assignee = request.POST.get('assignee')
+        assignee_id = request.POST.get('assignee')
+        assignee = None
+        if assignee_id:
+            try:
+                assignee = User.objects.get(id=assignee_id)
+            except User.DoesNotExist:
+                messages.error(request, "Selected assignee does not exist.")
+                return redirect('new_manufacturing_order')
         quantity = request.POST.get('quantity')
         unit = request.POST.get('unit')
         bom_id = request.POST.get('bom')
-        to_consume_list = request.POST.getlist('to_consume[]')  # List of component quantities
-        status = request.POST.get('status', 'Draft')
+        to_consume_list = request.POST.getlist('to_consume[]')
 
         # Validate required fields
-        if not all([reference, schedule_date, product_id, quantity, unit]):
-            messages.error(request, "Please fill in all required fields.")
+        errors = []
+        if not schedule_date:
+            errors.append("Schedule Date is required.")
+        if not product_id:
+            errors.append("Finished Product is required.")
+        if not quantity or float(quantity) <= 0:
+            errors.append("Quantity must be a positive number.")
+        if not unit or unit not in dict(Product.UNIT_CHOICES).keys():
+            errors.append("Unit is required and must be valid.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
             return redirect('new_manufacturing_order')
 
         try:
-            # Get related objects
-            product = Product.objects.get(id=product_id)
-            bom = BillOfMaterial.objects.get(id=bom_id) if bom_id else None
+            product = get_object_or_404(Product, id=product_id)
+            bom = get_object_or_404(BillofMaterials, id=bom_id) if bom_id else None
+            assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
+            quantity = float(quantity)
 
-            # Create ManufacturingOrder instance
+            # Check if reference is unique
+            if ManufacturingOrder.objects.filter(reference=reference).exists():
+                messages.error(request, "Reference already exists.")
+                return redirect('new_manufacturing_order')
+
             manufacturing_order = ManufacturingOrder.objects.create(
                 reference=reference,
                 schedule_date=schedule_date,
                 product=product,
-                assignee=assignee if assignee else None,
-                quantity=float(quantity),
+                assignee=assignee if assignee else None,  # ✅ User object now
+                quantity=quantity,
                 unit=unit,
                 bom=bom,
-                status=status,
+                status='Draft',
                 created_at=timezone.now()
             )
+            # Save components (only from BOM if provided)
+            if bom:
+                components = Component.objects.filter(bill_of_material=bom)
+                for i, component in enumerate(components):
+                    to_consume = float(to_consume_list[i]) if i < len(to_consume_list) else 0
+                    if to_consume > 0:
+                        if to_consume > component.available_quantity:
+                            messages.error(
+                                request,
+                                f"Cannot consume {to_consume} of {component.name}; only {component.available_quantity} available."
+                            )
+                            manufacturing_order.delete()  # rollback
+                            return redirect('new_manufacturing_order')
+                        ManufacturingOrderComponent.objects.create(
+                            manufacturing_order=manufacturing_order,
+                            component=component,
+                            to_consume=to_consume
+                        )
 
-            # Save components (assuming components are passed in the same order as displayed)
-            components = Component.objects.all()  # Adjust based on how components are filtered
-            for i, to_consume in enumerate(to_consume_list):
-                if i < len(components) and float(to_consume) > 0:
-                    ManufacturingOrderComponent.objects.create(
-                        manufacturing_order=manufacturing_order,
-                        component=components[i],
-                        to_consume=float(to_consume)
-                    )
+            messages.success(request, f"Manufacturing Order {manufacturing_order.reference} created successfully!")
+            return redirect('work_order_analysis')
 
-            messages.success(request, "Manufacturing Order created successfully!")
-            return redirect('manufacturing_dashboard')  # Redirect to dashboard or another page
-
-        except Product.DoesNotExist:
-            messages.error(request, "Selected product does not exist.")
-            return redirect('new_manufacturing_order')
-        except BillOfMaterial.DoesNotExist:
-            messages.error(request, "Selected Bill of Material does not exist.")
-            return redirect('new_manufacturing_order')
-        except ValueError:
-            messages.error(request, "Invalid quantity or component data.")
+        except ValueError as e:
+            messages.error(request, f"Invalid quantity or component data: {str(e)}")
             return redirect('new_manufacturing_order')
         except Exception as e:
             messages.error(request, f"An error occurred: {str(e)}")
             return redirect('new_manufacturing_order')
 
     else:
-        # GET request: Render the form with initial data
         products = Product.objects.all()
         users = User.objects.all()
-        boms = BillOfMaterial.objects.all()
+        boms = BillofMaterials.objects.all()
         components = Component.objects.all()
 
         context = {
@@ -231,21 +256,75 @@ def new_manufacturing_order(request):
             'users': users,
             'boms': boms,
             'components': components,
-            'mo': {'reference': ''},  # Placeholder for default values if needed
+            'units': Product.UNIT_CHOICES,
+            'mo': {'reference': generate_reference()},  # auto-generated reference
         }
         return render(request, 'new_manu.html', context)
+        
+def generate_reference():
+    today = datetime.date.today().strftime("%Y%m%d")
+    count = ManufacturingOrder.objects.filter(reference__startswith=f"MO-{today}").count() + 1
+    return f"MO-{today}-{count:04d}"
+
+def get_components(request, bom_id):
+    try:
+        bom = BillofMaterials.objects.get(id=bom_id)
+        components = Component.objects.filter(product=bom.product)  # Adjust filter as needed
+        data = [{'name': c.name, 'available_quantity': c.available_quantity, 'unit': c.unit} for c in components]
+        return JsonResponse({'components': data})
+    except BillofMaterials.DoesNotExist:
+        return JsonResponse({'components': []})
+    
 
 def manufacturing_products(request):
     products = Product.objects.all()
     return render(request, "manufacturing_products.html", {"products": products})
 
 def work_products(request):
-    products = []
-    return render(request, "work_products.html", {"products": products})
+    manufacturing_orders = ManufacturingOrder.objects.all()
+
+    status_counts = {
+        'All': ManufacturingOrder.objects.count(),
+        'Draft': ManufacturingOrder.objects.filter(status='Draft').count(),
+        'Confirmed': ManufacturingOrder.objects.filter(status='Confirmed').count(),
+        'In Progress': ManufacturingOrder.objects.filter(status='In Progress').count(),
+        'Completed': ManufacturingOrder.objects.filter(status='Completed').count(),
+        'To Close': ManufacturingOrder.objects.filter(status='To Close').count(),
+        'Not Assigned': ManufacturingOrder.objects.filter(status='Not Assigned').count(),
+        'Late': ManufacturingOrder.objects.filter(status='Late').count(),
+    }
+
+    return render(request, 'work_products.html', {
+        'manufacturing_orders': manufacturing_orders,
+        'status_counts': status_counts,
+    })
+
+# 2️⃣ View details of a single work order
+def view_work_order(request, pk):
+    work_order = get_object_or_404(ManufacturingOrder, pk=pk)
+    return render(request, 'view_work_order.html', {'work_order': work_order})
+
+def delete_work_order(request, pk):
+    order = get_object_or_404(ManufacturingOrder, pk=pk)
+    order.delete()
+    return redirect('work_products')  # redirect back to the list
+
+def edit_work_order(request, pk):
+    work_order = get_object_or_404(ManufacturingOrder, pk=pk)
+
+    if request.method == 'POST':
+        form = ManufacturingOrderForm(request.POST, instance=work_order)
+        if form.is_valid():
+            form.save()
+            return redirect('work_products')  # or wherever you want
+    else:
+        form = ManufacturingOrderForm(instance=work_order)
+
+    return render(request, 'edit_work_order.html', {'form': form, 'work_order': work_order})
 
 def bills_of_materials(request):
-    boms = BillOfMaterial.objects.all()
-    return render(request, "bills_of_materials.html", {"boms": boms})
+    boms = BillofMaterials.objects.filter(product__isnull=False)
+    return render(request, 'bills_of_materials.html', {'boms': boms})
 
 def work_center(request):
     return render(request, 'work_center.html')
@@ -261,32 +340,65 @@ def new_order(request):
     return render(request, "new_order.html")
 
 def stock_ledger(request):
-    products = Product.objects.all()
-    if request.method == "POST":
+    if request.method == 'POST':
         form = ProductForm(request.POST)
         if form.is_valid():
-            product = form.save(commit=False)
-            product.recalc_totals()
-            product.save()
-            messages.success(request, "✅ Product saved successfully!")
-            return redirect("stock_ledger")
+            try:
+                product = form.save(commit=False)
+                product.save()
+                product.recalc_totals()
+
+                # ✅ Optional: Create an initial stock ledger entry if quantity > 0
+                if product.on_hand > 0:
+                    StockLedgerEntry.objects.create(
+                        product=product,
+                        movement_type='IN',
+                        quantity=product.on_hand,
+                        reference="Initial Stock"
+                    )
+
+                messages.success(request, "Product saved successfully!")
+                return redirect('stock_ledger')
+            except Exception as e:
+                messages.error(request, f"Error saving product: {str(e)}")
+        else:
+            messages.error(request, "Please correct the errors in the form.")
     else:
         form = ProductForm()
-    return render(request, "stock_ledger.html", {"products": products, "form": form})
 
-def stock_product_edit(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    if request.method == "POST":
+    products = Product.objects.all()
+    ledger_entries = StockLedgerEntry.objects.select_related("product")
+
+    context = {
+        'products': products,
+        'ledger_entries': ledger_entries,
+        'form': form,
+    }
+    return render(request, 'stock_ledger.html', context)
+
+def stock_product_edit(request, product_id):
+    product = Product.objects.get(id=product_id)
+    if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
-            product = form.save(commit=False)
-            product.recalc_totals()
-            product.save()
-            messages.success(request, "✅ Product updated successfully!")
-            return redirect("stock_ledger")
+            try:
+                product = form.save(commit=False)
+                product.save()
+                product.recalc_totals()
+                messages.success(request, "Product updated successfully!")
+                return redirect('stock_ledger')
+            except Exception as e:
+                messages.error(request, f"Error updating product: {str(e)}")
+        else:
+            messages.error(request, "Please correct the errors in the form.")
     else:
         form = ProductForm(instance=product)
-    return render(request, "stock_ledger.html", {"products": Product.objects.all(), "form": form, "edit_product": product})
+    context = {
+        'products': Product.objects.all(),
+        'form': form,
+        'edit_product': product,
+    }
+    return render(request, 'stock_ledger.html', context)
 
 def stock_product_new(request):
     if request.method == "POST":

@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>View Work Order</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 flex">
+
+  <!-- Sidebar -->
+  <div class="w-64 bg-gray-800 min-h-screen p-6 space-y-6">
+    <h1 class="text-xl font-bold mb-6">ManufacturingPro</h1>
+    <ul class="space-y-3">
+      <li><a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a></li>
+      <li><a href="{% url 'work_products' %}" class="block px-4 py-2 rounded bg-gray-700">Work Orders</a></li>
+      <li><a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a></li>
+      <li><a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a></li>
+      <li><a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 p-6">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Work Order - WO-{{ work_order.id }}</h1>
+      <a href="{% url 'work_products' %}" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</a>
+    </div>
+
+    <!-- Work Order Details Card -->
+    <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-3xl mx-auto space-y-4">
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <h3 class="text-gray-400">Product</h3>
+          <p class="text-lg font-semibold">{{ work_order.product.name }}</p>
+        </div>
+        <div>
+          <h3 class="text-gray-400">Quantity</h3>
+          <p class="text-lg font-semibold">{{ work_order.quantity }}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <h3 class="text-gray-400">Work Center</h3>
+          <p class="text-lg font-semibold">{{ work_order.work_center }}</p>
+        </div>
+        <div>
+          <h3 class="text-gray-400">Assignee</h3>
+          <p class="text-lg font-semibold">
+            {% if work_order.assignee %}
+              {{ work_order.assignee.username }}
+            {% else %}
+              Not Assigned
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <h3 class="text-gray-400">Status</h3>
+          <span class="px-2 py-1 text-xs rounded
+            {% if work_order.status == 'Completed' %} bg-green-700 text-green-200
+            {% elif work_order.status == 'In Progress' %} bg-yellow-700 text-yellow-200
+            {% elif work_order.status == 'Confirmed' %} bg-blue-700 text-blue-200
+            {% elif work_order.status == 'To Close' %} bg-purple-700 text-purple-200
+            {% elif work_order.status == 'Not Assigned' %} bg-gray-600 text-gray-200
+            {% elif work_order.status == 'Late' %} bg-red-700 text-red-200
+            {% else %} bg-gray-600 text-gray-200 {% endif %}">
+            {{ work_order.status }}
+          </span>
+        </div>
+        <div>
+          <h3 class="text-gray-400">Created At</h3>
+          <p class="text-lg font-semibold">{{ work_order.created_at|date:"M d, Y H:i" }}</p>
+        </div>
+      </div>
+
+      {% if work_order.notes %}
+      <div>
+        <h3 class="text-gray-400">Notes</h3>
+        <p class="text-lg">{{ work_order.notes }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="flex justify-end gap-3 mt-4">
+        <a href="{% url 'edit_work_order' work_order.id %}" class="text-yellow-400 hover:underline ml-3">Edit</a>
+        <a href="{% url 'delete_work_order' work_order.id %}" class="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Delete</a>
+      </div>
+
+    </div>
+
+  </div>
+</body>
+</html>

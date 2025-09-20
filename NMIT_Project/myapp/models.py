@@ -5,7 +5,6 @@ import random, datetime
 # from .models import Product
 
 
-
 class EmailOTP(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     otp = models.CharField(max_length=6, blank=True, null=True)
@@ -17,8 +16,10 @@ class EmailOTP(models.Model):
         self.save()
         return self.otp
 
+    from django.utils import timezone
+
     def is_valid(self):
-        return (datetime.datetime.now(datetime.timezone.utc) - self.created_at).seconds < 600
+        return (timezone.now() - self.created_at).total_seconds() < 600
 
 
 # ===========================
@@ -27,14 +28,20 @@ class EmailOTP(models.Model):
 class Product(models.Model):
     UNIT_CHOICES = [
         ('Units', 'Units'),
-        ('Kg', 'Kg'),
+        ('Kg', 'Kilogram'),
         ('Litre', 'Litre'),
         ('Meter', 'Meter'),
+        ('Pcs', 'Pieces'),
     ]
 
-    name = models.CharField(max_length=200, unique=True)
-    unit_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    name = models.CharField(max_length=100)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='Units')
+    on_hand = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    description = models.TextField(blank=True, null=True)
+
+    def _str_(self):
+        return self.name
 
     # stock levels
     on_hand = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -56,7 +63,11 @@ class Product(models.Model):
 
     def recalc_totals(self):
         self.total_value = self.on_hand * self.unit_cost
-        self.save(update_fields=['total_value'])
+        if self.pk:  # Check if the instance has a primary key (i.e., it exists in the database)
+            self.save(update_fields=['total_value'])
+        else:
+            # For new objects, the total_value will be saved during the initial save
+            pass
 
 
 # ===========================
@@ -117,24 +128,27 @@ class WorkCenter(models.Model):
 # ===========================
 # Bill of Material & Components
 # ===========================
-class BillOfMaterial(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='boms')
-
-    def __str__(self):
-        return self.name
-
+class BillofMaterials(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    quantity = models.IntegerField()
+    unit = models.CharField(max_length=50)
 
 class Component(models.Model):
-    name = models.CharField(max_length=100)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='components', null=True, blank=True)
-    available_quantity = models.FloatField(default=0)
-    unit = models.CharField(max_length=50, default="pcs")
+    bom = models.ForeignKey(BillofMaterials, related_name='components', on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)   # Component name
+    quantity = models.PositiveIntegerField()   # Quantity required
+    unit = models.CharField(max_length=50)    # e.g., "pieces", "kg"
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.quantity} {self.unit})"
+class Operation(models.Model):
+    bom = models.ForeignKey(BillofMaterials, related_name='operations', on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)       # e.g., "Assembly"
+    time_minutes = models.PositiveIntegerField()  # Time required in minutes
 
-
+    def __str__(self):
+        return f"{self.name} ({self.time_minutes} mins)"
 
 # ===========================
 # Manufacturing Order
@@ -154,7 +168,7 @@ class ManufacturingOrder(models.Model):
     assignee = models.CharField(max_length=100, blank=True, null=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=10, choices=Product.UNIT_CHOICES, default='Units')
-    bom = models.ForeignKey(BillOfMaterial, on_delete=models.SET_NULL, null=True, blank=True)
+    bom = models.ForeignKey(BillofMaterials, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -190,7 +204,7 @@ class WorkOrder(models.Model):
 
     def __str__(self):
         return self.reference
-    
+
 class WorkProduct(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
@@ -209,3 +223,22 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     otp = models.CharField(max_length=6, blank=True, null=True)
+
+
+class Component(models.Model):
+    name = models.CharField(max_length=100)
+    unit = models.CharField(max_length=20, default="pcs")
+    total_quantity = models.IntegerField(default=0)
+    used_quantity = models.IntegerField(default=0)
+
+    @property
+    def available_quantity(self):
+        return self.total_quantity - self.used_quantity
+
+    def __str__(self):
+        return f"{self.name} ({self.unit})"
+
+class ManufacturingOrderComponent(models.Model):
+    component = models.ForeignKey(Component, on_delete=models.CASCADE)
+    quantity = models.IntegerField()
+

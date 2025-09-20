@@ -42,11 +42,11 @@
       {% csrf_token %}
       <div class="mb-4">
         <label class="block text-gray-300 mb-2">Email</label>
-        <input type="email" name="email" class="form-control bg-gray-800 text-black border-0" placeholder="Enter email" required />
+        <input type="email" name="email" class="form-control-sm w-full bg-gray-800 text-black border-0" placeholder="Enter email" required />
       </div>
       <div class="mb-4">
         <label class="block text-gray-300 mb-2">Password</label>
-        <input type="password" name="password" class="form-control bg-gray-800 text-black border-0" placeholder="Enter password" required />
+        <input type="password" name="password" class="form-control-sm w-full  bg-gray-800 text-black border-0" placeholder="Enter password" required />
       </div>
       <button type="submit" class="glow-btn w-full py-2 rounded-lg text-white font-semibold">
         Login
@@ -57,5 +57,20 @@
       <a href="{% url 'forgot_password' %}" class="text-cyan-400 hover:underline">Forgot Password?</a>
     </div>
   </div>
+  <script>
+
+    {% if messages %}
+    {% for message in messages %}
+    Toastify({
+      text: "{{ message|escapejs }}",
+      duration: 4000,
+      close: true,
+      gravity: "top",
+      position: "right",
+      backgroundColor: "{% if message.tags == 'success' %}linear-gradient(to right, #00b09b, #96c93d){% elif message.tags == 'error' %}linear-gradient(to right, #ff5f6d, #ffc371){% else %}linear-gradient(to right, #3a7bd5, #3a6073){% endif %}"
+    }).showToast();
+    {% endfor %}
+    {% endif %}
+  </script>
 </body>
 </html>

@@ -1,0 +1,47 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Delete Work Order</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-200 flex">
+
+  <!-- Sidebar -->
+  <div class="w-64 bg-gray-800 min-h-screen p-6 space-y-6">
+    <h1 class="text-xl font-bold mb-6">ManufacturingPro</h1>
+    <ul class="space-y-3">
+      <li><a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a></li>
+      <li><a href="{% url 'work_products' %}" class="block px-4 py-2 rounded bg-gray-700">Work Orders</a></li>
+      <li><a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a></li>
+      <li><a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a></li>
+      <li><a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 p-6">
+
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-red-400">Delete Work Order - WO-{{ work_order.id }}</h1>
+      <a href="{% url 'work_products' %}" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Back</a>
+    </div>
+
+    <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-xl mx-auto text-center">
+      <p class="text-gray-200 mb-4">
+        Are you sure you want to <span class="font-bold text-red-400">delete</span> work order <strong>WO-{{ work_order.id }}</strong> for <strong>{{ work_order.product.name }}</strong>?
+      </p>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-center gap-4">
+          <button type="submit" class="bg-red-600 px-4 py-2 rounded hover:bg-red-700">Yes, Delete</button>
+          <a href="{% url 'work_products' %}" class="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</body>
+</html>
