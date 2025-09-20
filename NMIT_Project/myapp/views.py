@@ -152,18 +152,88 @@ def work_order_analysis(request):
 
     return render(request, 'work_order_analysis.html', context)
 
-def new_manufacturing_order(request):
-    products = Product.objects.all()
-    boms = BillOfMaterial.objects.all()
-    components = Component.objects.all()
-    work_orders = []  # empty if new MO
-    return render(request, 'new_manu.html', {
-        'products': products,
-        'boms': boms,
-        'components': components,
-        'work_orders': work_orders
-    })
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import ManufacturingOrder, ManufacturingOrderComponent, Product, BillOfMaterial, Component, User
+from django.utils import timezone
 
+def new_manufacturing_order(request):
+    if request.method == 'POST':
+        # Extract form data
+        reference = request.POST.get('reference')
+        schedule_date = request.POST.get('schedule_date')
+        product_id = request.POST.get('product')
+        assignee = request.POST.get('assignee')
+        quantity = request.POST.get('quantity')
+        unit = request.POST.get('unit')
+        bom_id = request.POST.get('bom')
+        to_consume_list = request.POST.getlist('to_consume[]')  # List of component quantities
+        status = request.POST.get('status', 'Draft')
+
+        # Validate required fields
+        if not all([reference, schedule_date, product_id, quantity, unit]):
+            messages.error(request, "Please fill in all required fields.")
+            return redirect('new_manufacturing_order')
+
+        try:
+            # Get related objects
+            product = Product.objects.get(id=product_id)
+            bom = BillOfMaterial.objects.get(id=bom_id) if bom_id else None
+
+            # Create ManufacturingOrder instance
+            manufacturing_order = ManufacturingOrder.objects.create(
+                reference=reference,
+                schedule_date=schedule_date,
+                product=product,
+                assignee=assignee if assignee else None,
+                quantity=float(quantity),
+                unit=unit,
+                bom=bom,
+                status=status,
+                created_at=timezone.now()
+            )
+
+            # Save components (assuming components are passed in the same order as displayed)
+            components = Component.objects.all()  # Adjust based on how components are filtered
+            for i, to_consume in enumerate(to_consume_list):
+                if i < len(components) and float(to_consume) > 0:
+                    ManufacturingOrderComponent.objects.create(
+                        manufacturing_order=manufacturing_order,
+                        component=components[i],
+                        to_consume=float(to_consume)
+                    )
+
+            messages.success(request, "Manufacturing Order created successfully!")
+            return redirect('manufacturing_dashboard')  # Redirect to dashboard or another page
+
+        except Product.DoesNotExist:
+            messages.error(request, "Selected product does not exist.")
+            return redirect('new_manufacturing_order')
+        except BillOfMaterial.DoesNotExist:
+            messages.error(request, "Selected Bill of Material does not exist.")
+            return redirect('new_manufacturing_order')
+        except ValueError:
+            messages.error(request, "Invalid quantity or component data.")
+            return redirect('new_manufacturing_order')
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return redirect('new_manufacturing_order')
+
+    else:
+        # GET request: Render the form with initial data
+        products = Product.objects.all()
+        users = User.objects.all()
+        boms = BillOfMaterial.objects.all()
+        components = Component.objects.all()
+
+        context = {
+            'products': products,
+            'users': users,
+            'boms': boms,
+            'components': components,
+            'mo': {'reference': ''},  # Placeholder for default values if needed
+        }
+        return render(request, 'new_manu.html', context)
 
 def manufacturing_products(request):
     products = Product.objects.all()
