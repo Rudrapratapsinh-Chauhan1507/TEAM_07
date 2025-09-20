@@ -142,6 +142,8 @@ class Component(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.quantity} {self.unit})"
+
+    
 class Operation(models.Model):
     bom = models.ForeignKey(BillofMaterials, related_name='operations', on_delete=models.CASCADE)
     name = models.CharField(max_length=200)       # e.g., "Assembly"

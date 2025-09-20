@@ -323,21 +323,108 @@ def edit_work_order(request, pk):
     return render(request, 'edit_work_order.html', {'form': form, 'work_order': work_order})
 
 def bills_of_materials(request):
-    boms = BillofMaterials.objects.filter(product__isnull=False)
-    return render(request, 'bills_of_materials.html', {'boms': boms})
+    boms = BillofMaterials.objects.prefetch_related("components").all()
+    return render(request, "bills_of_materials.html", {"boms": boms})
+
+from .models import WorkCenter
 
 def work_center(request):
-    return render(request, 'work_center.html')
+    work_centers = WorkCenter.objects.all()
+    return render(request, 'work_center.html', {"work_centers": work_centers})
+
+def edit_work_center(request, pk):
+    wc = get_object_or_404(WorkCenter, pk=pk)
+
+    if request.method == "POST":
+        name = request.POST.get("name")
+        cost_per_hour = request.POST.get("cost_per_hour")
+
+        if not name or not cost_per_hour:
+            messages.error(request, "All fields are required!")
+            return redirect('edit_work_center', pk=pk)
+
+        wc.name = name
+        wc.cost_per_hour = cost_per_hour
+        wc.save()
+        messages.success(request, f"Work Center '{wc.name}' updated successfully!")
+        return redirect("work_center")
+
+    return render(request, "edit_work_center.html", {"wc": wc})
+
+
+def new_work_center(request):
+    if request.method == "POST":
+        name = request.POST.get("name")
+        cost_per_hour = request.POST.get("cost_per_hour")
+
+        if name and cost_per_hour:
+            WorkCenter.objects.create(name=name, cost_per_hour=cost_per_hour)
+            messages.success(request, f"Work Center '{name}' created successfully!")
+            return redirect("work_center")
+        else:
+            messages.error(request, "All fields are required!")
+
+    return render(request, "new_work_center.html")
+
+def delete_work_center(request, pk):
+    wc = get_object_or_404(WorkCenter, pk=pk)
+    wc.delete()
+    return redirect("work_center")
+
 
 
 def new_order(request):
+    products = Product.objects.all()
+    units = Product.UNIT_CHOICES
+
     if request.method == "POST":
-        print("✅ Form submitted!", request.POST)  # debug log
+        bom_name = request.POST.get("bom_name")
+        product_id = request.POST.get("product")
+        quantity = request.POST.get("quantity")
+        unit = request.POST.get("unit")
 
-        # process + save data as before...
-        return redirect("work_order_analysis")
+        component_names = request.POST.getlist("component_name[]")
+        component_quantities = request.POST.getlist("component_quantity[]")
+        component_units = request.POST.getlist("component_unit[]")
 
-    return render(request, "new_order.html")
+        try:
+            product = Product.objects.get(id=product_id)
+
+            # 🔹 Create BOM
+            bom = BillofMaterials.objects.create(
+                product=product,
+                name=bom_name,
+                quantity=quantity,
+                unit=unit,
+            )
+
+            # 🔹 Create Components
+            for i in range(len(component_names)):
+                name = component_names[i]
+                qty = component_quantities[i]
+                unit_val = component_units[i]
+
+                if name and qty and unit_val:
+                    Component.objects.create(
+                        bom=bom,
+                        name=name,
+                        quantity=qty,
+                        unit=unit_val,
+                    )
+
+            messages.success(request, f"BOM '{bom.name}' created successfully!")
+            return redirect("bills_of_materials")
+
+        except Product.DoesNotExist:
+            messages.error(request, "❌ Selected product does not exist.")
+            return redirect("new_order")
+
+        except Exception as e:
+            messages.error(request, f"⚠️ Error: {str(e)}")
+            return redirect("new_order")
+
+    return render(request, "new_order.html", {"products": products, "units": units})
+
 
 def stock_ledger(request):
     if request.method == 'POST':

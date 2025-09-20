@@ -1,95 +1,157 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Work Center</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Work Centers</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Inter, sans-serif;
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white font-sans">
-  <div class="flex min-h-screen">
-    
-    <!-- Sidebar / Master Menu -->
-    <aside class="w-64 bg-gray-800 p-4 space-y-4">
-      <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-        <i class=""></i> ManufacturingPro
-      </h2>
-      <nav class="space-y-2">
-        <a href="{%url 'work_order_analysis'%}" class="block px-4 py-2 rounded-lg hover:bg-gray-700">Manufacturing Orders</a>
-        <a href="{%url 'work_order_analysis'%}" class="block px-4 py-2 rounded-lg hover:bg-gray-700">Work Orders</a>
-        <a href="{%url 'bills_of_materials'%}" class="block px-4 py-2 rounded-lg hover:bg-gray-700">Bill of Materials</a>
-        <a href="{%url 'work_center'%}" class="block px-4 py-2 rounded-lg hover:bg-gray-700">Work Center</a>
-        <a href="{%url 'stock_ledger'%}" class="block px-4 py-2 rounded-lg hover:bg-gray-700">Stock Ledger</a>
-      </nav>
-    </aside>
 
-    <!-- Main Content -->
-    <main class="flex-1 p-6">
-      <!-- Header -->
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-extrabold">Work Center</h1>
-        <a href="#" class="bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 rounded-lg font-semibold text-white hover:from-purple-500 hover:to-blue-500 transition flex items-center gap-2">
-          <i class="bi bi-plus-circle"></i> New
+<body class="bg-gray-900 text-gray-200 min-h-screen flex">
+
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-800 p-6 min-h-screen">
+    <h2 class="text-xl font-bold text-white mb-6">ManufacturingPro</h2>
+    <nav class="space-y-3">
+      <a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing
+        Products</a>
+      <a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a>
+      <a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a>
+      <a href="{% url 'work_center' %}" class="block px-4 py-2 rounded bg-gray-700">Work Center</a>
+      <a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+      <h1 class="text-3xl font-bold text-white">Work Centers</h1>
+
+      <div class="flex items-center gap-3">
+        <!-- New Button -->
+        <a href="{% url 'new_work_center' %}"
+          class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition duration-200">
+          <i class="bi bi-plus-circle"></i> New Work Center
         </a>
-      </div>
 
-      <!-- Search Bar -->
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <input type="text" id="searchInput" placeholder="Search Work Center..." class="px-4 py-2 rounded-lg text-black w-64">
-          <i class="bi bi-search text-xl"></i>
-        </div>
-        <div class="flex gap-3 text-xl">
-          <i class="bi bi-list-ul cursor-pointer"></i>
-          <i class="bi bi-grid-3x3-gap cursor-pointer"></i>
-        </div>
+        <!-- Toggle Buttons -->
+        <button onclick="toggleView('list')"
+          class="bg-blue-600 px-3 py-2 rounded-lg hover:bg-blue-700 transition text-white">
+          <i class="bi bi-list"></i>
+        </button>
+        <button onclick="toggleView('grid')"
+          class="bg-purple-600 px-3 py-2 rounded-lg hover:bg-purple-700 transition text-white">
+          <i class="bi bi-grid"></i>
+        </button>
       </div>
+    </div>
 
-      <!-- Table -->
-      <div class="overflow-x-auto rounded-xl border border-gray-700 shadow-lg bg-gray-800">
-        <table class="table-auto w-full text-left">
+    <!-- Messages -->
+    <div id="toastContainer" class="fixed top-6 right-6 space-y-2 z-50">
+      {% if messages %}
+        {% for message in messages %}
+        <div
+          class="px-4 py-2 rounded-lg bg-green-600 text-white shadow-lg transition transform duration-300 ease-in-out opacity-0">
+          {{ message }}
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <!-- List View -->
+    <div id="listView" class="block">
+      <div class="bg-gray-800 rounded-xl shadow-xl overflow-x-auto">
+        <table class="min-w-full text-left">
           <thead class="bg-gray-700 text-gray-200">
             <tr>
-              <th class="px-6 py-3">Work Center</th>
-              <th class="px-6 py-3">Cost per Hour</th>
+              <th class="px-6 py-3">Name</th>
+              <th class="px-6 py-3">Cost/Hour</th>
               <th class="px-6 py-3 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody id="workCenterTable">
-            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
-              <td class="px-6 py-3">Work Center - 1</td>
-              <td class="px-6 py-3">50</td>
-              <td class="px-6 py-3 text-center">
-                <a href="#" class="btn btn-warning btn-sm"><i class="bi bi-pencil-square"></i></a>
-                <a href="#" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></a>
+          <tbody class="divide-y divide-gray-700">
+            {% for wc in work_centers %}
+            <tr class="hover:bg-gray-700/50 transition">
+              <td class="px-6 py-3">{{ wc.name }}</td>
+              <td class="px-6 py-3">{{ wc.cost_per_hour }}</td>
+              <td class="px-6 py-3 text-center space-x-2">
+                <a href="{% url 'edit_work_center' wc.id %}"
+                  class="px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white"><i
+                    class="bi bi-pencil-square"></i></a>
+                <a href="{% url 'delete_work_center' wc.id %}"
+                  class="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white"><i class="bi bi-trash"></i></a>
               </td>
             </tr>
-            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
-              <td class="px-6 py-3">Work Center - 2</td>
-              <td class="px-6 py-3">75</td>
-              <td class="px-6 py-3 text-center">
-                <a href="#" class="btn btn-warning btn-sm"><i class="bi bi-pencil-square"></i></a>
-                <a href="#" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></a>
-              </td>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-center py-4 text-gray-400">No Work Centers Found</td>
             </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>
-    </main>
-  </div>
+    </div>
 
+    <!-- Grid View -->
+    <div id="gridView" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      {% for wc in work_centers %}
+      <div class="p-6 bg-gray-800 rounded-xl shadow hover:shadow-lg transition">
+        <h3 class="text-xl font-bold text-white mb-2">{{ wc.name }}</h3>
+        <p class="text-gray-400 mb-4">Cost: {{ wc.cost_per_hour }} /hr</p>
+        <div class="flex space-x-2">
+          <a href="{% url 'edit_work_center' wc.id %}"
+            class="px-3 py-1 rounded bg-yellow-500 hover:bg-yellow-600 text-white">Edit</a>
+          <a href="{% url 'delete_work_center' wc.id %}"
+            class="px-3 py-1 rounded bg-red-500 hover:bg-red-600 text-white">Delete</a>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-gray-400">No Work Centers Found</p>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- JS for toggle -->
   <script>
-    // Simple search filter
-    document.getElementById("searchInput").addEventListener("keyup", function() {
-      let filter = this.value.toLowerCase();
-      let rows = document.querySelectorAll("#workCenterTable tr");
-      rows.forEach(row => {
-        let text = row.innerText.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
+    function toggleView(view) {
+      document.getElementById("listView").classList.add("hidden");
+      document.getElementById("gridView").classList.add("hidden");
+
+      if (view === "list") {
+        document.getElementById("listView").classList.remove("hidden");
+      } else {
+        document.getElementById("gridView").classList.remove("hidden");
+      }
+    }
+
+     // Animate toast
+      window.addEventListener('DOMContentLoaded', () => {
+        const toasts = document.querySelectorAll('#toastContainer div');
+        toasts.forEach((toast, index) => {
+          setTimeout(() => {
+            toast.classList.add('opacity-100'); // fade in
+          }, 100 * index);
+
+          setTimeout(() => {
+            toast.classList.remove('opacity-100'); // fade out
+            toast.classList.add('opacity-0');
+          }, 3000 + (index * 300)); // visible for 3 sec
+
+          // Optional: redirect after 3 sec
+          setTimeout(() => {
+            window.location.href = "{% url 'work_center' %}";
+          }, 3200);
+        });
       });
-    });
   </script>
 </body>
+
 </html>
