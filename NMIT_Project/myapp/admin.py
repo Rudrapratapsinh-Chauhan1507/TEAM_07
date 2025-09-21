@@ -5,7 +5,7 @@ from .models import (
     Product,
     StockLedgerEntry,
     WorkCenter,
-    BillofMaterials,
+    BillOfMaterials,
     Component,
     ManufacturingOrder,
     ManufacturingOrderComponent,
@@ -57,7 +57,7 @@ class WorkCenterAdmin(admin.ModelAdmin):
 # ==============================
 # Bill of Material & Components
 # ==============================
-@admin.register(BillofMaterials)
+@admin.register(BillOfMaterials)
 class BillOfMaterialAdmin(admin.ModelAdmin):
     list_display = ('id',"name", "product")
     search_fields = ("name", "product__name")
@@ -65,8 +65,10 @@ class BillOfMaterialAdmin(admin.ModelAdmin):
 
 @admin.register(Component)
 class ComponentAdmin(admin.ModelAdmin):
-    list_display = ('id',"name", "available_quantity", "unit")
-    search_fields = ("name",)
+    list_display = ("id", "name", "available_quantity", "unit")
+
+    def available_quantity(self, obj):
+        return obj.total_quantity - obj.used_quantity
 
 
 # ==============================
@@ -94,8 +96,3 @@ class WorkOrderAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     search_fields = ("reference", "manufacturing_order__reference", "assigned_to")
 
-class ComponentAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "available_quantity", "unit")
-
-    def available_quantity(self, obj):
-        return obj.total_quantity - obj.used_quantity

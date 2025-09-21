@@ -7,8 +7,8 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .models import EmailOTP
 from django.core.mail import EmailMultiAlternatives
-from .models import Product,BillofMaterials, Component
-from .models import ManufacturingOrder, ManufacturingOrderComponent, Product, BillofMaterials, Component, User
+from .models import Product, BillOfMaterials, Component
+from .models import ManufacturingOrder, ManufacturingOrderComponent, Product, Component, User
 from django.http import JsonResponse
 from django.utils import timezone
 from .models import StockLedgerEntry
@@ -43,7 +43,7 @@ def signup_view(request):
         )
 
         # 🔹 Create OTP
-        otp_instance, created = EmailOTP.objects.get_or_create(user=user)
+        otp_instance, c= EmailOTP.objects.get_or_create(user=user)
         otp = otp_instance.generate_otp()
 
         # 🔹 Send Email
@@ -143,21 +143,19 @@ def forgot_password(request):
     return render(request, "forgot_password.html", {"form": form})
 
 def work_order_analysis(request):
-    all_orders = ManufacturingOrder.objects.all()
-    status_counts = {
-            'All': all_orders.count(),
-            'Draft': all_orders.filter(status='Draft').count(),
-            'Confirmed': all_orders.filter(status='Confirmed').count(),
-            'In Progress': all_orders.filter(status='In Progress').count(),
-            'Completed': all_orders.filter(status='Completed').count(),
-            'To Close': all_orders.filter(status='To Close').count(),
-            'Not Assigned': all_orders.filter(assignee__isnull=True).count(),
-            'Late': all_orders.filter(schedule_date__lt=timezone.now(), status__in=['Draft', 'In Progress']).count(),
-        }
-    return render(request, 'work_order_analysis.html', {
-                'manufacturing_orders': all_orders,
-                **status_counts
-            })
+    # Count orders by status
+    status_counts = ManufacturingOrder.objects.values('status').annotate(count=Count('id'))
+    
+    # Convert to dict: {"Draft": 5, "In-Progress": 3, ...}
+    status_dict = {item['status']: item['count'] for item in status_counts}
+    total_count = ManufacturingOrder.objects.count()
+    
+    context = {
+        "status_counts": status_dict,
+        "all_count": total_count,
+        "manufacturing_orders": ManufacturingOrder.objects.all(),
+    }
+    return render(request, "work_order_analysis.html", context)
 
 
 def new_manufacturing_order(request):
@@ -196,7 +194,7 @@ def new_manufacturing_order(request):
 
         try:
             product = get_object_or_404(Product, id=product_id)
-            bom = get_object_or_404(BillofMaterials, id=bom_id) if bom_id else None
+            bom = get_object_or_404(BillOfMaterials, id=bom_id) if bom_id else None
             assignee = get_object_or_404(User, id=assignee_id) if assignee_id else None
             quantity = float(quantity)
 
@@ -248,7 +246,7 @@ def new_manufacturing_order(request):
     else:
         products = Product.objects.all()
         users = User.objects.all()
-        boms = BillofMaterials.objects.all()
+        boms = BillOfMaterials.objects.all()
         components = Component.objects.all()
 
         context = {
@@ -268,11 +266,11 @@ def generate_reference():
 
 def get_components(request, bom_id):
     try:
-        bom = BillofMaterials.objects.get(id=bom_id)
+        bom = BillOfMaterials.objects.get(id=bom_id)
         components = Component.objects.filter(product=bom.product)  # Adjust filter as needed
         data = [{'name': c.name, 'available_quantity': c.available_quantity, 'unit': c.unit} for c in components]
         return JsonResponse({'components': data})
-    except BillofMaterials.DoesNotExist:
+    except BillOfMaterials.DoesNotExist:
         return JsonResponse({'components': []})
     
 
@@ -323,8 +321,12 @@ def edit_work_order(request, pk):
     return render(request, 'edit_work_order.html', {'form': form, 'work_order': work_order})
 
 def bills_of_materials(request):
-    boms = BillofMaterials.objects.prefetch_related("components").all()
-    return render(request, "bills_of_materials.html", {"boms": boms})
+    # Only fetch BOMs and their components
+    boms = BillOfMaterials.objects.all()
+    context = {
+        'boms': boms
+    }
+    return render(request, 'bills_of_materials.html', context)
 
 from .models import WorkCenter
 
@@ -391,7 +393,7 @@ def new_order(request):
             product = Product.objects.get(id=product_id)
 
             # 🔹 Create BOM
-            bom = BillofMaterials.objects.create(
+            bom = BillOfMaterials.objects.create(
                 product=product,
                 name=bom_name,
                 quantity=quantity,

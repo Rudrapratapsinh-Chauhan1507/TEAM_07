@@ -61,37 +61,35 @@
         <!-- BOM Table -->
         <div class="bg-gray-800 rounded-xl shadow-xl p-6 overflow-x-auto">
             <table class="min-w-full text-left">
-                <thead class="bg-gray-700 text-gray-200">
-                    <tr>
-                        <th class="px-6 py-3">Reference</th>
-                        <th class="px-6 py-3">Product</th>
-                        <th class="px-6 py-3">Quantity</th>
-                        <th class="px-6 py-3">Unit</th>
-                        <th class="px-6 py-3">Components</th>
-                        <th class="px-6 py-3">Operations</th>
-                        <th class="px-6 py-3">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-700">
-                    {% for bom in boms %}
-                    <tr class="hover:bg-gray-700/50 transition">
-                        <td class="px-6 py-4">{{ bom.name }}</td>
-                        <td class="px-6 py-4">{{ bom.product.name }}</td>
-                        <td class="px-6 py-4">{{ bom.quantity }} {{ bom.unit }}</td>
-                        <td class="px-6 py-4">
-                            <ul class="list-disc pl-4">
-                                {% for comp in bom.components.all %}
-                                <li>{{ comp.name }} - {{ comp.quantity }} {{ comp.unit }}</li>
-                                {% empty %}
-                                <li>No components</li>
-                                {% endfor %}
-                            </ul>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-
-            </table>
+            <thead class="bg-gray-700 text-gray-200">
+                <tr>
+                    <th class="px-6 py-3">BOM Name</th>
+                    <th class="px-6 py-3">Product</th>
+                    <th class="px-6 py-3">Quantity</th>
+                    <th class="px-6 py-3">Unit</th>
+                    <th class="px-6 py-3">Components</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+                {% for bom in boms %}
+                <tr class="hover:bg-gray-700/50 transition">
+                    <td class="px-6 py-4">{{ bom.name }}</td>
+                    <td class="px-6 py-4">{{ bom.product.name }}</td>
+                    <td class="px-6 py-4">{{ bom.quantity }}</td>
+                    <td class="px-6 py-4">{{ bom.unit }}</td>
+                    <td class="px-6 py-4">
+                        <ul class="list-disc pl-4">
+                            {% for comp in bom.components.all %}
+                            <li>{{ comp.name }} - {{ comp.quantity }} {{ comp.unit }}</li>
+                            {% empty %}
+                            <li>No components</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         </div>
     </main>
 

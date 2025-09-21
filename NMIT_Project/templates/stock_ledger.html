@@ -99,21 +99,21 @@
         <th class="px-4 py-2">Movement</th>
         <th class="px-4 py-2">Quantity</th>
         <th class="px-4 py-2">Reference</th>
-        <th class="px-4 py-2">Timestamp</th>
+        <th class="px-4 py-2">Time</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="divide-y divide-gray-700">
       {% for entry in ledger_entries %}
-      <tr>
-        <td>{{ entry.product.name }}</td>
-        <td>{{ entry.get_movement_type_display }}</td>
-        <td>{{ entry.quantity }}</td>
-        <td>{{ entry.reference }}</td>
-        <td>{{ entry.timestamp }}</td>
+      <tr class="hover:bg-gray-700/50 transition">
+        <td class="px-6 py-3">{{ entry.product.name }}</td>
+        <td class="px-6 py-3">{{ entry.get_movement_type_display }}</td>
+        <td class="px-6 py-3">{{ entry.quantity }}</td>
+        <td class="px-6 py-3">{{ entry.reference }}</td>
+        <td class="px-6 py-3">{{ entry.timestamp }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="5" class="text-center text-gray-400">No ledger entries found.</td>
+        <td colspan="5" class="text-center py-4 text-gray-400">No ledger entries found.</td>
       </tr>
       {% endfor %}
     </tbody>

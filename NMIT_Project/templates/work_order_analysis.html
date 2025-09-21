@@ -33,9 +33,11 @@
     <aside class="w-64 bg-gray-800 p-6 min-h-screen">
         <h2 class="text-xl font-bold text-white mb-6">ManufacturingPro</h2>
         <nav class="space-y-3">
-            <a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing Products</a>
+            <a href="{% url 'work_order_analysis' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Manufacturing
+                Products</a>
             <a href="{% url 'work_products' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Orders</a>
-            <a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of Materials</a>
+            <a href="{% url 'bills_of_materials' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Bills of
+                Materials</a>
             <a href="{% url 'work_center' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Work Center</a>
             <a href="{% url 'stock_ledger' %}" class="block px-4 py-2 rounded hover:bg-gray-700">Stock Ledger</a>
         </nav>
@@ -59,45 +61,15 @@
                 </div>
             </div>
         </div>
-{% comment %} 
-        <!-- ✅ Added counts -->
-        <div class="mb-8 space-y-2">
-            <p>Total Orders: {{ all_count }}</p>
-            <p>Draft: {{ draft_count }}</p>
-            <p>In Progress: {{ progress_count }}</p>
-            <p>Completed: {{ completed_count }}</p>
-        </div> {% endcomment %}
 
-        <!-- Status Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-7 gap-4 mb-8">
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">{{ all_count }}</h2>
-                <p class="text-gray-400">All</p>
+        <!-- ✅ Dynamic Status Summary -->
+        <div class="grid grid-cols-8 gap-4 my-4">
+            {% for key, value in status_counts.items %}
+            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                <h2 class="text-xl font-semibold">{{ value }}</h2>
+                <p class="text-gray-400">{{ key }}</p>
             </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">{{ draft_count }}</h2>
-                <p class="text-gray-400">Drafts</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">—</h2>
-                <p class="text-gray-400">Confirmed</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">{{ progress_count }}</h2>
-                <p class="text-gray-400">In-Progress</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">—</h2>
-                <p class="text-gray-400">To Close</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">—</h2>
-                <p class="text-gray-400">Not Assigned</p>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-lg shadow-xl text-center">
-                <h2 class="text-xl font-semibold">—</h2>
-                <p class="text-gray-400">Late</p>
-            </div>
+            {% endfor %}
         </div>
 
         <!-- Orders Table -->

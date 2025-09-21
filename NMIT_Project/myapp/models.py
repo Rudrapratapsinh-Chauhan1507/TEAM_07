@@ -36,7 +36,8 @@ class Product(models.Model):
 
     name = models.CharField(max_length=100)
     unit_cost = models.DecimalField(max_digits=10, decimal_places=2)
-    unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default='Units')
+    unit_choices = [('pcs', 'Pieces'), ('kg', 'Kilogram')]
+    unit = models.CharField(max_length=10, choices=unit_choices)
     on_hand = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     description = models.TextField(blank=True, null=True)
 
@@ -124,28 +125,27 @@ class WorkCenter(models.Model):
     def __str__(self):
         return self.name
 
-
-# ===========================
-# Bill of Material & Components
-# ===========================
-class BillofMaterials(models.Model):
+class BillOfMaterials(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     name = models.CharField(max_length=200)
-    quantity = models.IntegerField()
-    unit = models.CharField(max_length=50)
-
-class Component(models.Model):
-    bom = models.ForeignKey(BillofMaterials, related_name='components', on_delete=models.CASCADE)
-    name = models.CharField(max_length=200)   # Component name
-    quantity = models.PositiveIntegerField()   # Quantity required
-    unit = models.CharField(max_length=50)    # e.g., "pieces", "kg"
+    quantity = models.FloatField(default=1)
+    unit = models.CharField(max_length=10, choices=Product.unit_choices)
 
     def __str__(self):
-        return f"{self.name} ({self.quantity} {self.unit})"
+        return self.name
+
+class Component(models.Model):
+    bom = models.ForeignKey(BillOfMaterials, on_delete=models.CASCADE, related_name='components')
+    name = models.CharField(max_length=200)
+    quantity = models.FloatField(default=1)
+    unit = models.CharField(max_length=10, choices=Product.unit_choices)
+
+    def __str__(self):
+        return self.name
 
     
 class Operation(models.Model):
-    bom = models.ForeignKey(BillofMaterials, related_name='operations', on_delete=models.CASCADE)
+    bom = models.ForeignKey(BillOfMaterials, related_name='operations', on_delete=models.CASCADE)
     name = models.CharField(max_length=200)       # e.g., "Assembly"
     time_minutes = models.PositiveIntegerField()  # Time required in minutes
 
@@ -170,7 +170,7 @@ class ManufacturingOrder(models.Model):
     assignee = models.CharField(max_length=100, blank=True, null=True)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit = models.CharField(max_length=10, choices=Product.UNIT_CHOICES, default='Units')
-    bom = models.ForeignKey(BillofMaterials, on_delete=models.SET_NULL, null=True, blank=True)
+    bom = models.ForeignKey(BillOfMaterials, on_delete=models.SET_NULL, null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
     created_at = models.DateTimeField(auto_now_add=True)
 
